@@ -1,0 +1,71 @@
+{
+  "Comment": "BONUS/ADVANCED: orchestrates Crawler -> ETL Job -> Notification, instead of the simpler Lambda S3-trigger flow used in the main pipeline. Useful when you want retries, parallel branches, or a visual execution history in the AWS console.",
+  "StartAt": "StartCrawler",
+  "States": {
+    "StartCrawler": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Parameters": {
+        "Name": "ecommerce-pipeline-processed-crawler"
+      },
+      "Next": "WaitForCrawler"
+    },
+    "WaitForCrawler": {
+      "Type": "Wait",
+      "Seconds": 30,
+      "Next": "GetCrawlerStatus"
+    },
+    "GetCrawlerStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+      "Parameters": {
+        "Name": "ecommerce-pipeline-processed-crawler"
+      },
+      "ResultPath": "$.CrawlerStatus",
+      "Next": "IsCrawlerDone"
+    },
+    "IsCrawlerDone": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.CrawlerStatus.Crawler.State",
+          "StringEquals": "READY",
+          "Next": "StartGlueETLJob"
+        }
+      ],
+      "Default": "WaitForCrawler"
+    },
+    "StartGlueETLJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "ecommerce-pipeline-etl-job"
+      },
+      "Next": "NotifySuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:ecommerce-pipeline-alerts",
+        "Message": "Pipeline run completed successfully."
+      },
+      "End": true
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:ecommerce-pipeline-alerts",
+        "Message": "Pipeline run FAILED. Check the Glue job's CloudWatch logs."
+      },
+      "End": true
+    }
+  }
+}

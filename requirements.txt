@@ -1,0 +1,9 @@
+# No external dependencies are required to run generate_sample_data.py —
+# it only uses the Python standard library (csv, random, datetime, argparse).
+#
+# These are listed for local development convenience (linting, AWS CLI usage)
+# and are NOT needed inside the Glue job itself (Glue provides its own
+# PySpark + boto3 runtime).
+
+boto3>=1.34.0
+flake8>=7.0.0
