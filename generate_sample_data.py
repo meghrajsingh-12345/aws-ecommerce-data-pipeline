@@ -1,12 +1,3 @@
-"""
-generate_sample_data.py
-------------------------
-Simulates a daily extract from an e-commerce order system.
-
-Usage:
-    python generate_sample_data.py --rows 5000 --out orders.csv
-"""
-
 import argparse
 import csv
 import random
