@@ -1,25 +1,3 @@
-"""
-etl_job.py
-----------
-AWS Glue (PySpark) ETL job.
-
-Responsibilities:
-  1. Read raw CSV order data from the "raw" S3 bucket.
-  2. Clean it (drop duplicates/nulls, fix types, normalize text).
-  3. Enrich it (derive total_amount, order_year, order_month).
-  4. Write it back out as partitioned Parquet in the "processed" bucket.
-
-Why Parquet + partitioning?
-  - Parquet is columnar -> Athena/Redshift only scan the columns a
-    query actually needs, which is both faster and cheaper than CSV.
-  - Partitioning by year/month means a query filtered to a single
-    month only scans that month's files, not the entire dataset.
-    This directly reduces Athena's "$5 per TB scanned" cost.
-
-This script is designed to run as a Glue job (Glue 4.0 / Spark 3.x),
-but the core PySpark logic is portable and could run on EMR too.
-"""
-
 import sys
 
 from awsglue.context import GlueContext
